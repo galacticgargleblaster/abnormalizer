@@ -7,7 +7,7 @@
 import unittest
 from click.testing import CliRunner
 
-from abnormalizer import abnormalizer
+from abnormalizer import reformat
 from abnormalizer import cli
 
 import os
@@ -21,7 +21,7 @@ class TestAbnormalizer(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures, if any."""
-        self.parser = abnormalizer.FileParser(ABNORMAL_LIBLIST)
+        output = reformat(ABNORMAL_LIBLIST)
 
     def tearDown(self):
         """Tear down test fixtures, if any."""

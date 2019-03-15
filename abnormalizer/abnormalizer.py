@@ -16,14 +16,17 @@ IM_SO_SORRY = \
 /* ************************************************************************** */
 """
 
-class	FileParser():
-	def __init__(self, filename):
-		with open(filename, 'r') as f:
-			self.raw = f.read()
-		import ipdb; ipdb.set_trace()
+from .parser import BaseParser
+from .lexer import FTLexer
+from .formatter import NormeFormatter
+import pygments
+from io import StringIO
 
-class	HeaderFileParser(FileParser):
-	pass
-
-class	SourceFileParser(FileParser):
-	pass
+def reformat(filename):
+    with open(filename, 'r') as f:
+        raw = f.read()
+    tokens = pygments.lex(raw, FTLexer())
+    fmt = NormeFormatter()
+    output = StringIO() 
+    fmt.format(tokens, output)
+    return output
