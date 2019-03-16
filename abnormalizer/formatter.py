@@ -1,11 +1,13 @@
 from pygments.formatter import Formatter
 from pygments.token import Token as PygmentsToken
+from . import Token, TokenLike, logger
+from .parser import glob_tokens
 from collections import namedtuple
 import logging
 import os 
 import sys
 
-IM_SO_SORRY = \
+SPECIAL = \
 """/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
@@ -13,7 +15,7 @@ IM_SO_SORRY = \
 /*                                                    +:+ +:+         +:+     */
 /*   By: student <student@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 4242/42/42 66:66:66 by student           #+#    #+#             */
+/*   Created: 1666/06/06 66:66:66 by student           #+#    #+#             */
 /*   Updated: 4242/42/42 66:66:66 by studnet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
@@ -25,44 +27,17 @@ def vis_len(value: str) -> int:
     """ a tab usually prints as four spaces """
     return len(value) + (value.count("\t") * 3)
 
-log_file_path = os.path.expanduser("~/formatter_debug_logs.txt")
-logger = logging.getLogger(__name__)
-
-filehandler = logging.FileHandler(filename=log_file_path, mode='w')
-streamhandler = logging.StreamHandler(stream=sys.stdout)
-streamhandler.setLevel(logging.WARNING)
-filehandler.setLevel(logging.DEBUG)
-logger.addHandler(filehandler)
-logger.addHandler(streamhandler)
-logger.setLevel(logging.DEBUG)
-
-class Token(object):
-    def __init__(self, ttype, value):
-        self.ttype = ttype
-        self.value = value
-
-    def remove_trailing_whitespace(self) -> None:
-        if "\n" in self.value and len(self.value) > 1:
-            logger.info(f"removing trailing whitespace from {self.ttype}")
-            logger.info(f"before: `{self}`")
-            self.value = "\n".join([line.rstrip() for line in self.value.split("\n")])
-            logger.info(f"after: `{self}`")
-
-    
-    def __str__(self):
-        value = self.value
-        value = value.replace('\t', '⇥⇥⇥⇥')
-        value = value.replace('\n', '␤\n')
-        value = value.replace(' ', '⍽')
-        return f"{self.ttype}: `{value}`"
 
 """
+need to do some light parsing after tokenization, need to be able to identify struct scopes, function scopes
+
 line wrapping (depends on token type)
     - Comment.Special, insert **
     - all others, tab to global scope
 
-special-case typedef structs
+space preprocesser directives
 
+Determine global scope spacing
 """
 
 MAX_COMMENT_LINE_LEN = MAX_ROWSIZE - len("**    ")
@@ -95,7 +70,14 @@ class NormeFormatter(Formatter):
         self.preprocessor_define_depth = 0
         self.global_scope_n_tabs = 0
 
-    def preformat(self, tokensource):
+    # def get_global_scope(self, tokens) -> int:
+    #     global_scope = 0
+    #     (PygmentsToken.Keyword, "typedef"), GreedyAnything, (PygmentsToken.Name)
+    #     (PygmentsToken.Keyword, "struct"), GreedyAnything, (PygmentsToken.Name)
+    #     (PygmentsToken.Name || PygmentsToken.Keyword.Type), GreedyAnything, (PygmentsToken.Name)
+
+
+    def mutate_tokens(self, tokensource):
         """ mutates the tokensource and maybe updates global scope? """
         tokensource = list(tokensource)
         tokens = [Token(ttype=ttype, value=value) for ttype, value in tokensource]
@@ -122,9 +104,11 @@ class NormeFormatter(Formatter):
         return clean_tokens
 
     def format(self, tokensource, outfile):
-        tokens = self.preformat(tokensource)
+        tokens = self.mutate_tokens(tokensource)
+        globs = glob_tokens(tokens)
+
         for token in tokens:
             if (token.ttype == PygmentsToken.Comment.Special):
-                outfile.write(IM_SO_SORRY)
-                continue;
+                outfile.write(SPECIAL)
+                continue
             outfile.write(token.value)
