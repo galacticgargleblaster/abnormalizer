@@ -3,7 +3,7 @@
 """Console script for abnormalizer."""
 import sys
 import click
-from abnormalizer import reformat 
+from .abnormalizer import normalized 
 
 
 @click.command()
@@ -11,7 +11,7 @@ from abnormalizer import reformat
 @click.option("--dry_run", default=1, help="Don't overwrite the file, print the output to stdout")
 def main(filename, dry_run):
     """Console script for abnormalizer."""
-    output = reformat(filename)
+    output = normalized(filename)
     output.seek(0)
     if (dry_run):
         sys.stdout.write(output.read())
