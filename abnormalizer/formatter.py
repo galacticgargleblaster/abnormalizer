@@ -1,7 +1,7 @@
 from pygments.formatter import Formatter
 from pygments.token import Token as PygmentsToken
 from . import Token, TokenLike, logger
-from .parser import glob_tokens
+from .parser import glob_tokens, PreProcessorDirective
 from collections import namedtuple
 import logging
 import os 
@@ -95,12 +95,6 @@ class NormeFormatter(Formatter):
                 logger.info(f'current: {tokens[idx]}')
             else:
                 clean_tokens.append(token)
-            
-            if token.ttype == PygmentsToken.Comment.Preproc:
-                if "#if" in token.value:
-                    self.preprocessor_define_depth += 1
-                elif "#endif" in token.value:
-                    self.preprocessor_define_depth -= 1
         return clean_tokens
 
     def format(self, tokensource, outfile):
@@ -110,5 +104,12 @@ class NormeFormatter(Formatter):
         for token in tokens:
             if (token.ttype == PygmentsToken.Comment.Special):
                 outfile.write(SPECIAL)
+                continue
+            elif (isinstance(token, PreProcessorDirective)):
+                outfile.write(token.formatted(self.preprocessor_define_depth))
+                if "#if" in token.value:
+                    self.preprocessor_define_depth += 1
+                elif "#endif" in token.value:
+                    self.preprocessor_define_depth -= 1
                 continue
             outfile.write(token.value)
