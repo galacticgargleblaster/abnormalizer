@@ -3,7 +3,6 @@
 """Main module."""
 
 
-from .parser import BaseParser
 from .lexer import FTLexer
 from .formatter import NormeFormatter
 import pygments

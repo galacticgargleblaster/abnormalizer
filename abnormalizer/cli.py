@@ -11,6 +11,8 @@ from .abnormalizer import normalized
 @click.option("--dry_run", default=1, help="Don't overwrite the file, print the output to stdout")
 def main(filename, dry_run):
     """Console script for abnormalizer."""
+    if not (filename.endswith(".h") or filename.endswith(".c")):
+        raise IOError("invalid file extension")
     output = normalized(filename)
     output.seek(0)
     if (dry_run):
