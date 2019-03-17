@@ -15,7 +15,7 @@ SPECIAL = \
 /*                                                    +:+ +:+         +:+     */
 /*   By: student <student@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 1666/06/06 66:66:66 by student           #+#    #+#             */
+/*   Created: 1967/08/25 00:00:00 by student           #+#    #+#             */
 /*   Updated: 4242/42/42 66:66:66 by studnet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
@@ -76,8 +76,7 @@ class NormeFormatter(Formatter):
     #     (PygmentsToken.Keyword, "struct"), GreedyAnything, (PygmentsToken.Name)
     #     (PygmentsToken.Name || PygmentsToken.Keyword.Type), GreedyAnything, (PygmentsToken.Name)
 
-
-    def mutate_tokens(self, tokensource):
+    def preprocess_tokens(self, tokensource):
         """ mutates the tokensource and maybe updates global scope? """
         tokensource = list(tokensource)
         tokens = [Token(ttype=ttype, value=value) for ttype, value in tokensource]
@@ -98,10 +97,10 @@ class NormeFormatter(Formatter):
         return clean_tokens
 
     def format(self, tokensource, outfile):
-        tokens = self.mutate_tokens(tokensource)
+        tokens = self.preprocess_tokens(tokensource)
         globs = glob_tokens(tokens)
 
-        for token in tokens:
+        for token in globs:
             if (token.ttype == PygmentsToken.Comment.Special):
                 outfile.write(SPECIAL)
                 continue
