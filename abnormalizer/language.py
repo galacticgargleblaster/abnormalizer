@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from typing import List
 
-from . import FormatSpec
+from . import FormatSpec, logger
 from .token import TokenLike, Token, distance_to_next_token_containing, find_range_of_tokens_within_scope
 
 TAB = '\t'
@@ -62,9 +62,9 @@ class GlobalDeclaration(LanguageFeature, GlobalScopeContributor):
 class StructureBase(LanguageFeature, GlobalScopeContributor, ABC):
 
     @abstractmethod
-    def _mutate_names(self) -> None:
+    def _mangle_names(self) -> None:
         """ 
-        mashes noncompliant names such as foobar into t_foobar, e_foobar, g_foobar, ...
+        mangle noncompliant names such as foobar into t_foobar, e_foobar, g_foobar, ...
         """
 
     @property
@@ -111,21 +111,24 @@ class StructureBase(LanguageFeature, GlobalScopeContributor, ABC):
         return output 
 
 class StructureDefinition(StructureBase):
-    def _mutate_names(self):
+    def _mangle_names(self):
         val = self.tokens[self._identifier_idx - 1]
+        if not val.startswith('s_'):
+            self.tokens[self._identifier_idx].value = f"s_{val}"
+            logger.warning("mangled")
         
 
 class EnumDefinition(StructureBase):
-    def _mutate_names(self):
+    def _mangle_names(self):
         pass
 
 class TypedefStructureDefinition(StructureBase):
-    def _mutate_names(self):
+    def _mangle_names(self):
         pass
     pass
 
 class TypedefEnumDefinition(StructureBase):
-    def _mutate_names(self):
+    def _mangle_names(self):
         pass
     pass
 

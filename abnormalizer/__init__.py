@@ -26,9 +26,14 @@ MAX_ROW_SIZE = 80
 MAX_FUNCTIONS_PER_FILE = 5
 
 class FormatSpec(object):
-    global_scope_n_chars = 0
-    define_depth_n_spaces = 0
+    """
+    A container class for state that's specific to the file being formatted
+    """
 
+    def __init__(self):
+        self.global_scope_n_chars = 0
+        self.define_depth_n_spaces = 0
+        self.mangled_names_mapping = {}
 
     def tabs_needed_to_pad_to_global_scope(self, line_length: int):
         assert line_length <= self.global_scope_n_chars
