@@ -1,7 +1,8 @@
 from pygments.formatter import Formatter
 from pygments.token import Token as PygmentsToken
 from . import Token, TokenLike, logger
-from .parser import glob_tokens, PreProcessorDirective, Function, FunctionPrototype, StructureLike, GlobalDeclaration, TokenGlob
+from .parser import grouped_by_language_feature
+from .language import LanguageFeature, PreProcessorDirective, StructureLike
 from collections import namedtuple
 from typing import List
 import logging
@@ -85,13 +86,11 @@ class NormeFormatter(Formatter):
             clean_tokens.append(token)
         return clean_tokens
 
-    
-
     @staticmethod
     def remove_whitespace_tokens(globs: List[TokenLike]):
         for entity in globs:
             import ipdb; ipdb.set_trace()
-            if isinstance(entity, TokenGlob):
+            if isinstance(entity, LanguageFeature):
                 [t.strip() for t in entity.tokens]
                 entity.remove_empty_tokens()
             else:
@@ -106,13 +105,11 @@ class NormeFormatter(Formatter):
 
         # gotta glob the preprocessor defines together before removing all whitespace
         # because preprocessor directives' syntax relies on whitespace 
-        globs = glob_tokens(tokens)
+        globs = grouped_by_language_feature(tokens)
         
         # all whitespace can be removed after globbing is done.
-        globs = [e for e in globs if isinstance(e, TokenGlob) or e.strip() != ''] 
-        [g.remove_whitespace() for g in globs if isinstance(g, TokenGlob)]
-
-        print(f"to {len(globs)} by trimming whitespace")
+        globs = [e for e in globs if isinstance(e, LanguageFeature) or e.strip() != ''] 
+        [g.remove_whitespace() for g in globs if isinstance(g, LanguageFeature)]
 
         for token in globs:
             if (token.ttype == PygmentsToken.Comment.Special):

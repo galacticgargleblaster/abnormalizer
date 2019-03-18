@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from typing import List
-from abc import abstractmethod
-from . import TokenLike
 
 """
 rather, parser lite
@@ -16,44 +14,7 @@ These objects need to exist so that we can make assertions like:
 
 from pygments.token import Token as PT
 from . import Token
-
-class TokenGlob(TokenLike):
-    def __init__(self, tokens: List[Token]):
-        self.tokens = tokens
-    
-    @abstractmethod
-    def formatted(self):
-        pass
-
-    @property
-    def value(self):
-        return "".join([t.value for t in self.tokens])
-
-    def remove_whitespace(self):
-        [t.strip() for t in self.tokens]
-        self.tokens = [t for t in self.tokens if t.value]
-
-class PreProcessorDirective(TokenGlob):
-    def formatted(self, indent_spaces: int) -> str:
-        self.tokens[1].value = self.tokens[1].value.lstrip()
-        return f"#{' '*indent_spaces}{' '.join([t.value for t in self.tokens[1:]])}"
-    
-
-class Function(TokenGlob):
-    pass
-
-class FunctionPrototype(TokenGlob):
-    pass
-
-class FunctionCall(TokenGlob):
-    pass
-
-class GlobalDeclaration(TokenGlob):
-    pass
-
-class StructureLike(TokenGlob):
-    def formatted(self, global_scope_n_tabs):
-        return self.value
+from .language import FunctionDefinition, FunctionPrototype, StructureLike, GlobalDeclaration, PreProcessorDirective
 
 def next_punctuation(tokens: List[Token]) -> (int, str):
     """ 
@@ -101,24 +62,24 @@ def find_range_of_tokens_within_scope(tokens, start_index: int, punctuation: str
         idx += 1
     return (first, last)
 
-"""
-Could be either a function, function prototype, structure.  
-All will start at a new line, meaning the preceeding token ends with a '\n'
 
-FUNCTION PROTOTYPE (functions don't get called at global scope)
-asdf hjkl(type asdf);
+def grouped_by_language_feature(tokens):
+    """
+    Acts at global scope, grouping tokens into language features.
 
-FUNCTION DEFINITION
-asdf jkll(){}
+    FUNCTION PROTOTYPE (functions don't get called at global scope)
+    asdf hjkl(type asdf);
 
-STRUCT-LIKE
-asdf jklk{};
+    FUNCTION DEFINITION
+    asdf jkll(){}
 
-GLOBAL
-asdf asdfj;
-assdf asdf[];
-"""
-def consume(tokens):
+    STRUCT-LIKE
+    asdf jklk{};
+
+    GLOBAL
+    asdf asdfj;
+    assdf asdf[];
+    """
     idx = 0
     while (idx < len(tokens)):
         token = tokens[idx]
@@ -134,7 +95,7 @@ def consume(tokens):
                     else:  # It's a function definition
                         open_b, close_b = find_range_of_tokens_within_scope(tokens, close_p, '{')
                         end = close_b + 1
-                        tokens[idx: end] = [Function(tokens[idx: end])]
+                        tokens[idx: end] = [FunctionDefinition(tokens[idx: end])]
                 if p == '{':
                     open_b, close_b = find_range_of_tokens_within_scope(tokens, idx, '{')
                     distance_to_semicolon = distance_to_next_token_containing(tokens, close_b, ';')
@@ -151,11 +112,4 @@ def consume(tokens):
         idx += 1
     return tokens
 
-
-
-def glob_tokens(tokens: List[Token]) -> List[TokenLike]:
-    globbed_tokens = consume(tokens)
-    return globbed_tokens
-    hmm = [g for g in globbed_tokens if isinstance(g, PreProcessorDirective)]
-    import ipdb; ipdb.set_trace()
     
