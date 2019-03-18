@@ -2,8 +2,9 @@ from abc import abstractmethod, ABC
 from typing import List
 
 from . import FormatSpec
-from .token import TokenLike, Token, distance_to_next_token_containing
+from .token import TokenLike, Token, distance_to_next_token_containing, find_range_of_tokens_within_scope
 
+TAB = '\t'
 
 class LanguageFeature(TokenLike, ABC):
     def __init__(self, tokens: List[Token]):
@@ -40,7 +41,7 @@ class FunctionBase(GlobalScopeContributor):
         idx = identifier_idx - 1
         while (self.tokens[idx].value == '*'):
             idx -= 1
-        line = " ".join(self.tokens[:idx]) + " "
+        line = " ".join([t.value for t in self.tokens[:idx]]) + " "
         return len(line)
 
 class FunctionDefinition(LanguageFeature, FunctionBase):
@@ -58,10 +59,17 @@ class GlobalDeclaration(LanguageFeature, GlobalScopeContributor):
     def minimum_global_scope_indentation(self) -> int:
         pass
 
-class StructureLike(LanguageFeature, GlobalScopeContributor):
+class StructureBase(LanguageFeature, GlobalScopeContributor, ABC):
+
+    @abstractmethod
+    def _mutate_names(self) -> None:
+        """ 
+        mashes noncompliant names such as foobar into t_foobar, e_foobar, g_foobar, ...
+        """
+
     @property
     def _identifier_idx(self):
-        return distance_to_next_token_containing(self.tokens, start=0, substring='{')
+        return distance_to_next_token_containing(self.tokens, start=0, substring='{') - 1
     
     def minimum_local_scope_indentation(self) -> int:
         min_indentation = 0
@@ -77,7 +85,7 @@ class StructureLike(LanguageFeature, GlobalScopeContributor):
         return min_indentation
 
     def minimum_global_scope_indentation(self) -> int:
-        idx = self._identifier_idx - 1
+        idx = self._identifier_idx
         while (self.tokens[idx].value == '*'):
             idx -= 1
         line = " ".join([t.value for t in self.tokens[:idx]]) + " "
@@ -85,9 +93,53 @@ class StructureLike(LanguageFeature, GlobalScopeContributor):
 
 
     def formatted(self, spec: FormatSpec) -> str:
-        output = ' '.join([t.value for t in self.tokens[:self._identifier_idx]])
-        left_padding = len(output + " ") 
-        n_tabs = int((spec.global_scope_n_chars - left_padding) / 4)
-        output += n_tabs * '\t'
-        output += f"{self.tokens[self._identifier_idx].value}\n"
+        idx = self._identifier_idx
+        type_specifiers = ' '.join([t.value for t in self.tokens[:idx]])
+        left_padding = len(type_specifiers + " ") 
+        n_tabs = spec.tabs_needed_to_pad_to_global_scope(left_padding)
+        identifier = self.tokens[idx].value
+        
+        open_b, close_b = find_range_of_tokens_within_scope(self.tokens, idx, '{')
+
+        import ipdb; ipdb.set_trace()
+
+        output = f"""{type_specifiers}{n_tabs * TAB}{identifier}
+        {{
+        {TAB}{open_b}
+        }};
+        """
         return output 
+
+class StructureDefinition(StructureBase):
+    def _mutate_names(self):
+        val = self.tokens[self._identifier_idx - 1]
+        
+
+class EnumDefinition(StructureBase):
+    def _mutate_names(self):
+        pass
+
+class TypedefStructureDefinition(StructureBase):
+    def _mutate_names(self):
+        pass
+    pass
+
+class TypedefEnumDefinition(StructureBase):
+    def _mutate_names(self):
+        pass
+    pass
+
+
+class StructureLike(object):
+    def __new__(cls, tokens: List[Token]):
+        if any([t.value == 'typedef' for t in tokens]):
+            if any([t.value == 'struct' for t in tokens]):
+                return TypedefStructureDefinition(tokens)
+            elif any ([t.value == 'enum' for t in tokens]):
+                return TypedefEnumDefinition(tokens)
+        elif any([t.value == 'struct' for t in tokens]):
+            return StructureDefinition(tokens)
+        elif any ([t.value == 'enum' for t in tokens]):
+            return EnumDefinition(tokens)
+        else:
+            raise NotImplementedError(f"formatting not implemented for:\n{[t.value for t in tokens]}")

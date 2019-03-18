@@ -3,7 +3,7 @@ from pygments.token import Token as PygmentsToken
 from . import logger, MAX_ROW_SIZE, MAX_FUNCTIONS_PER_FILE, FormatSpec
 from .token import Token, TokenLike
 from .parser import grouped_by_language_feature
-from .language import LanguageFeature, PreProcessorDirective, StructureLike, FunctionDefinition
+from .language import LanguageFeature, PreProcessorDirective, StructureLike, FunctionDefinition, GlobalScopeContributor
 from collections import namedtuple
 from typing import List
 import logging
@@ -108,6 +108,11 @@ class NormeFormatter(Formatter):
         if n_function_defns > MAX_FUNCTIONS_PER_FILE:
             logger.warning(f"there are {n_function_defns} function definitions. (limit {MAX_FUNCTIONS_PER_FILE})")
 
+        self.spec.global_scope_n_chars = max([c.minimum_global_scope_indentation()
+                                                for c in globs if isinstance(c, GlobalScopeContributor)])
+        if self.spec.global_scope_n_chars % 4:
+            self.spec.global_scope_n_chars += (4 - (self.spec.global_scope_n_chars % 4))
+        
         for token in globs:
             if (token.ttype == PygmentsToken.Comment.Special):
                 outfile.write(SPECIAL)

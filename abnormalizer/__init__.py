@@ -29,3 +29,12 @@ class FormatSpec(object):
     global_scope_n_chars = 0
     define_depth_n_spaces = 0
 
+
+    def tabs_needed_to_pad_to_global_scope(self, line_length: int):
+        assert line_length <= self.global_scope_n_chars
+        diff = self.global_scope_n_chars - line_length
+        if diff:
+            return 1 + int(diff / 4)
+        return 0
+
+
