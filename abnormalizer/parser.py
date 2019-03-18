@@ -29,20 +29,23 @@ class TokenGlob(TokenLike):
     def value(self):
         return "".join([t.value for t in self.tokens])
 
-
-    def remove_empty_tokens(self) -> None:
+    def remove_whitespace(self):
+        [t.strip() for t in self.tokens]
         self.tokens = [t for t in self.tokens if t.value]
 
 class PreProcessorDirective(TokenGlob):
     def formatted(self, indent_spaces: int) -> str:
         self.tokens[1].value = self.tokens[1].value.lstrip()
-        return f"#{' '*indent_spaces}{' '.join([t.value for t in self.tokens[1:-1]])}\n"
+        return f"#{' '*indent_spaces}{' '.join([t.value for t in self.tokens[1:]])}"
     
 
 class Function(TokenGlob):
     pass
 
 class FunctionPrototype(TokenGlob):
+    pass
+
+class FunctionCall(TokenGlob):
     pass
 
 class GlobalDeclaration(TokenGlob):
@@ -52,11 +55,15 @@ class StructureLike(TokenGlob):
     def formatted(self, global_scope_n_tabs):
         return self.value
 
-def next_punctuation(tokens: List[Token]) -> (str):
-    for token in tokens:
+def next_punctuation(tokens: List[Token]) -> (int, str):
+    """ 
+    (int, str)
+    (index of punctuation token, string that was matched )
+    """
+    for idx, token in enumerate(tokens):
         try:
             p = next((p for p in ";({" if p in token.value)) 
-            return p
+            return (idx, p)
         except StopIteration:
             pass
     return None
@@ -116,15 +123,17 @@ def consume(tokens):
     while (idx < len(tokens)):
         token = tokens[idx]
         if token.ttype in [PT.Name, PT.Keyword, PT.Keyword.Type]:
-            p = next_punctuation(tokens[idx:])
+            p_idx, p = next_punctuation(tokens[idx:])
             if p:
                 if p == '(':
+                    # Could be function (prototype|definition)
                     open_p, close_p = find_range_of_tokens_within_scope(tokens, idx, '(')
                     if tokens[close_p + 1].value == ';':
                         end = close_p + 2  # include the semicolon
                         tokens[idx: end] = [FunctionPrototype(tokens[idx: end])]
-                    else:
-                        end = close_p + 1
+                    else:  # It's a function definition
+                        open_b, close_b = find_range_of_tokens_within_scope(tokens, close_p, '{')
+                        end = close_b + 1
                         tokens[idx: end] = [Function(tokens[idx: end])]
                 if p == '{':
                     open_b, close_b = find_range_of_tokens_within_scope(tokens, idx, '{')

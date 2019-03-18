@@ -103,11 +103,15 @@ class NormeFormatter(Formatter):
     def format(self, tokensource, outfile):
         tokens = [Token(ttype=ttype, value=value) for ttype, value in list(tokensource)]
         tokens = self.preprocess_tokens(tokens)
-        globs = glob_tokens(tokens)  # gotta glob the preprocessor defines together before removing all whitespace
-        # all whitespace can be removed after globbing is done.
 
-        print(f"went from {len(globs)}")
+        # gotta glob the preprocessor defines together before removing all whitespace
+        # because preprocessor directives' syntax relies on whitespace 
+        globs = glob_tokens(tokens)
+        
+        # all whitespace can be removed after globbing is done.
         globs = [e for e in globs if isinstance(e, TokenGlob) or e.strip() != ''] 
+        [g.remove_whitespace() for g in globs if isinstance(g, TokenGlob)]
+
         print(f"to {len(globs)} by trimming whitespace")
 
         for token in globs:
@@ -123,3 +127,4 @@ class NormeFormatter(Formatter):
                 outfile.write(token.formatted(self.global_scope_n_tabs))
             else:
                 outfile.write(token.value)
+            outfile.write('\n')

@@ -4,7 +4,7 @@
 
 `tbd`
 
-## Use
+## Usage
 
 `abnormalizer [FILE]`
 
@@ -12,15 +12,21 @@ abnormalizer operates on `.c` and `.h` files only
 
 ## Will this break my program?
 
-Maybe.  It's a program that edits your code so you don't have to.  It's far from perfect.  You are encouraged to draw your own conclusion.
+Maybe.  It's a program that edits your code so you don't have to. 
 
 ### Why???
 
-Respectably, 42 enforces a coding style for C.  However, it's woefully nonstandard.  Perhaps that's the point.  The enigmatic, under-funded 42 curriculum encourages students to fumble in the dark.  
+- It is a software person's duty to minimize the repetition of tasks which they themselves have done before.
 
-`may not compile or is invalid for some reasons.` 
+### *Real World* formatters for *Real World* code style standards
 
-If we were grown-ups, we'd use clang-format for C/C++, or another language specific formatter such as gofmt, dartfmt, prettify
+from various eras, and for various languages:
+
+- [uncrustify](https://github.com/uncrustify/uncrustify)
+- [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
+- indent (`man indent` if you're on *nix)
+- [gofmt](https://golang.org/cmd/gofmt/)
+- [dart_style](https://github.com/dart-lang/dart_style)
 
 http://beza1e1.tuxen.de/articles/formatting_code.html
 
