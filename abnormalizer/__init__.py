@@ -25,6 +25,14 @@ logger.setLevel(logging.DEBUG)
 MAX_ROW_SIZE = 80
 MAX_FUNCTIONS_PER_FILE = 5
 
+def tabs_needed_to_pad_to_scope(line_length: int, scope: int) -> int:
+    assert line_length <= scope
+    diff = scope - line_length
+    if diff:
+        return 1 + int(diff / 4)
+    return 0
+
+
 class FormatSpec(object):
     """
     A container class for state that's specific to the file being formatted
@@ -34,12 +42,9 @@ class FormatSpec(object):
         self.global_scope_n_chars = 0
         self.define_depth_n_spaces = 0
         self.mangled_names_mapping = {}
+        self.user_defined_type_names = []
 
     def tabs_needed_to_pad_to_global_scope(self, line_length: int):
-        assert line_length <= self.global_scope_n_chars
-        diff = self.global_scope_n_chars - line_length
-        if diff:
-            return 1 + int(diff / 4)
-        return 0
+        return tabs_needed_to_pad_to_scope(line_length, self.global_scope_n_chars)
 
 

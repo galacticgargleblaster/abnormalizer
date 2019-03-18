@@ -112,6 +112,8 @@ class NormeFormatter(Formatter):
                                                 for c in globs if isinstance(c, GlobalScopeContributor)])
         if self.spec.global_scope_n_chars % 4:
             self.spec.global_scope_n_chars += (4 - (self.spec.global_scope_n_chars % 4))
+
+        self.spec.user_defined_type_names = [s.user_defined_types() for s in globs if isinstance(s, StructureLike)]
         
         for token in globs:
             if (token.ttype == PygmentsToken.Comment.Special):
