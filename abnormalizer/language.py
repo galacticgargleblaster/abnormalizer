@@ -1,15 +1,15 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from typing import List
 
-from . import TokenLike, Token
+from . import TokenLike, Token, FormatSpec
 
 
-class LanguageFeature(TokenLike):
+class LanguageFeature(TokenLike, ABC):
     def __init__(self, tokens: List[Token]):
         self.tokens = tokens
     
     @abstractmethod
-    def formatted(self):
+    def formatted(self, spec: FormatSpec) -> str:
         pass
 
     @property
@@ -21,18 +21,24 @@ class LanguageFeature(TokenLike):
         self.tokens = [t for t in self.tokens if t.value]
 
 class PreProcessorDirective(LanguageFeature):
-    def formatted(self, indent_spaces: int) -> str:
+    def formatted(self, spec: FormatSpec) -> str:
         self.tokens[1].value = self.tokens[1].value.lstrip()
-        return f"#{' '*indent_spaces}{' '.join([t.value for t in self.tokens[1:]])}"
+        return f"#{' '*spec.define_depth_n_spaces}{' '.join([t.value for t in self.tokens[1:]])}"
     
 
 class FunctionDefinition(LanguageFeature):
+    def formatted(self, spec: FormatSpec) -> str:
+        pass
     pass
 
 class FunctionPrototype(LanguageFeature):
+    def formatted(self, spec: FormatSpec) -> str:
+        pass
     pass
 
 class GlobalDeclaration(LanguageFeature):
+    def formatted(self, spec: FormatSpec) -> str:
+        pass
     pass
 
 class StructureLike(LanguageFeature):

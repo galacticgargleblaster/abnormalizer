@@ -1,6 +1,6 @@
 from pygments.formatter import Formatter
 from pygments.token import Token as PygmentsToken
-from . import Token, TokenLike, logger
+from . import Token, TokenLike, logger, MAX_ROWSIZE, FormatSpec
 from .parser import grouped_by_language_feature
 from .language import LanguageFeature, PreProcessorDirective, StructureLike
 from collections import namedtuple
@@ -13,7 +13,7 @@ SPECIAL = \
 """/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   violation_of_best_practices.h                      :+:      :+:    :+:   */
+/*   nothing_to_see_here.h                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: student <student@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -23,7 +23,6 @@ SPECIAL = \
 /* ************************************************************************** */
 """
 
-MAX_ROWSIZE = 80
 
 def vis_len(value: str) -> int:
     """ a tab usually prints as four spaces """
@@ -63,14 +62,20 @@ def format_block_comment(value: str) -> str:
             formatted_lines.append(line)
     return "\n".join(formatted_lines)
 
+class HeaderFileFormatter(object):
+    """ adds include-guards """
+    pass
+
+class SourceFileFormatter(object):
+    pass
+
 class NormeFormatter(Formatter):
     """
     maintains state while formatting a file
     """
 
     def __init__(self):
-        self.preprocessor_define_depth = 0
-        self.global_scope_n_tabs = 0
+        self.spec = FormatSpec()
 
     @staticmethod
     def preprocess_tokens(tokens: List[Token]):
@@ -78,26 +83,13 @@ class NormeFormatter(Formatter):
         trims whitespace from tokens and pops whitespace tokens entirely
         """
         clean_tokens = []
-        for idx, token in enumerate(tokens):
+        for token in tokens:
             logger.info(token)
             token.remove_trailing_whitespace()
             if token.ttype == PygmentsToken.Comment.Multiline:
                 token.value = format_block_comment(token.value)
             clean_tokens.append(token)
         return clean_tokens
-
-    @staticmethod
-    def remove_whitespace_tokens(globs: List[TokenLike]):
-        for entity in globs:
-            import ipdb; ipdb.set_trace()
-            if isinstance(entity, LanguageFeature):
-                [t.strip() for t in entity.tokens]
-                entity.remove_empty_tokens()
-            else:
-                entity.strip()
-                if entity.value == '':
-                    globs.remove(entity)
-        return globs
 
     def format(self, tokensource, outfile):
         tokens = [Token(ttype=ttype, value=value) for ttype, value in list(tokensource)]
@@ -115,13 +107,13 @@ class NormeFormatter(Formatter):
             if (token.ttype == PygmentsToken.Comment.Special):
                 outfile.write(SPECIAL)
             elif (isinstance(token, PreProcessorDirective)):
-                outfile.write(token.formatted(self.preprocessor_define_depth))
+                outfile.write(token.formatted(self.spec))
                 if "#if" in token.value:
-                    self.preprocessor_define_depth += 1
+                    self.spec.define_depth_n_spaces += 1
                 elif "#endif" in token.value:
-                    self.preprocessor_define_depth -= 1
+                    self.spec.define_depth_n_spaces -= 1
             elif (isinstance(token, StructureLike)):
-                outfile.write(token.formatted(self.global_scope_n_tabs))
+                outfile.write(token.formatted(self.spec))
             else:
                 outfile.write(token.value)
             outfile.write('\n')

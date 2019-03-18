@@ -14,13 +14,19 @@ log_file_path = os.path.expanduser("~/formatter_debug_logs.txt")
 logger = logging.getLogger(__name__)
 
 filehandler = logging.FileHandler(filename=log_file_path, mode='w')
-streamhandler = logging.StreamHandler(stream=sys.stdout)
+streamhandler = logging.StreamHandler(stream=sys.stderr)
 streamhandler.setLevel(logging.WARNING)
 filehandler.setLevel(logging.DEBUG)
 logger.addHandler(filehandler)
 logger.addHandler(streamhandler)
 logger.setLevel(logging.DEBUG)
 
+
+MAX_ROWSIZE = 80
+
+class FormatSpec(object):
+    global_scope_n_chars = 0
+    define_depth_n_spaces = 0
 
 class TokenLike(object):
     ttype = None

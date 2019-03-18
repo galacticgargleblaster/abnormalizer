@@ -18,6 +18,8 @@ Maybe.  It's a program that edits your code so you don't have to.
 
 - It is a software person's duty to minimize the repetition of tasks which they themselves have done before.
 
+This is a lazy hack built atop pygments, a syntax-highlighting library.
+
 ### *Real World* formatters for *Real World* code style standards
 
 from various eras, and for various languages:
@@ -30,3 +32,6 @@ from various eras, and for various languages:
 
 http://beza1e1.tuxen.de/articles/formatting_code.html
 
+indenting local and global
+header guards
+auto-prefixing
