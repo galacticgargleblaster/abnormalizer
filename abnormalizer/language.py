@@ -73,8 +73,11 @@ class StructureBase(LanguageFeature, GlobalScopeContributor, ABC):
     def user_defined_types(self) -> List[str]:
         types = []
         for idx, t in enumerate(self.tokens):
-            if t.ttype == PT.Name and idx > 0 and (self.tokens[idx - 1].ttype == PT.Keyword or self.tokens[idx + 1].value == ';'):
+            if t.ttype == PT.Name and idx > 0 and self.tokens[idx - 1].value in ['typedef', 'struct', 'enum']:
                 types.append(t.value)
+        if 'typedef' in [t.value for t in self.tokens]:
+            open_b, close_b = find_range_of_tokens_within_scope(self.tokens, self._identifier_idx, '{')
+            types.append(self.tokens[close_b].value)
         return types
 
     @property
@@ -113,13 +116,9 @@ class StructureBase(LanguageFeature, GlobalScopeContributor, ABC):
         n_tabs = spec.tabs_needed_to_pad_to_global_scope(left_padding)
         identifier = self.tokens[idx].value
         
-        open_b, close_b = find_range_of_tokens_within_scope(self.tokens, idx, '{')
-
-
         output = f"""{type_specifiers}{n_tabs * TAB}{identifier}
 {{
-{self._formatted_body(spec)}}};
-"""
+{self._formatted_body(spec)}}}"""
         return output 
 
 class StructureDefinition(StructureBase):
@@ -143,9 +142,10 @@ class StructureDefinition(StructureBase):
     def _split_member(self, member: List[Token], spec: FormatSpec) -> Tuple[List[Token]]:
         """ spilts a member into parts pre- and post-indentation """
         idx = 0
-        while (member[idx].ttype == PT.Keyword or member[idx].value in spec.user_defined_type_names):
+        while (member[idx].ttype in [PT.Keyword, PT.Keyword.Type]\
+                or member[idx].value in spec.user_defined_type_names):
             idx += 1
-        return (member[0:idx], member[idx:])
+        return (member[:idx], member[idx:])
 
     def minimum_local_scope_indentation(self, spec: FormatSpec) -> int:
         min_indentation = 0
@@ -154,6 +154,9 @@ class StructureDefinition(StructureBase):
             partial_line = f"{TAB}{' '.join([t.value for t in first])} "
             min_indentation = max(min_indentation, len(partial_line))
         return min_indentation
+    
+    def formatted(self, spec: FormatSpec) -> str:
+        return super().formatted(spec) + ';'
 
 class EnumDefinition(StructureBase):
     SEPARATOR = ','
@@ -166,13 +169,22 @@ class EnumDefinition(StructureBase):
             line = f"{TAB}{' '.join([t.value for t in member if t.value != ','])},\n"
             result += line
         return result
+    
+    def formatted(self, spec: FormatSpec) -> str:
+        return super().formatted(spec) + ';'
 
-class TypedefStructureDefinition(StructureDefinition):
+class WithTypedef(StructureBase):
+    def formatted(self, spec: FormatSpec) -> str:
+        n_tabs = tabs_needed_to_pad_to_scope(len("}"), spec.global_scope_n_chars)
+        line = f"{TAB * n_tabs}{self.tokens[-2].value}\n"
+        return super().formatted(spec) + line
+
+class TypedefStructureDefinition(StructureDefinition, WithTypedef):
     def _mangle_names(self):
         pass
     pass
 
-class TypedefEnumDefinition(EnumDefinition):
+class TypedefEnumDefinition(EnumDefinition, WithTypedef):
     def _mangle_names(self):
         pass
     pass

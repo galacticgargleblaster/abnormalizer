@@ -3,7 +3,7 @@ from pygments.token import Token as PygmentsToken
 from . import logger, MAX_ROW_SIZE, MAX_FUNCTIONS_PER_FILE, FormatSpec
 from .token import Token, TokenLike
 from .parser import grouped_by_language_feature
-from .language import LanguageFeature, PreProcessorDirective, StructureLike, FunctionDefinition, GlobalScopeContributor
+from .language import LanguageFeature, PreProcessorDirective, StructureLike, FunctionDefinition, GlobalScopeContributor, StructureBase
 from collections import namedtuple
 from typing import List
 import logging
@@ -113,8 +113,11 @@ class NormeFormatter(Formatter):
         if self.spec.global_scope_n_chars % 4:
             self.spec.global_scope_n_chars += (4 - (self.spec.global_scope_n_chars % 4))
 
-        self.spec.user_defined_type_names = [s.user_defined_types() for s in globs if isinstance(s, StructureLike)]
-        
+        self.spec.user_defined_type_names = [t \
+                                            for s in globs if isinstance(s, StructureBase) \
+                                            for t in s.user_defined_types]
+        self.spec.user_defined_type_names = set(self.spec.user_defined_type_names)
+
         for token in globs:
             if (token.ttype == PygmentsToken.Comment.Special):
                 outfile.write(SPECIAL)

@@ -41,7 +41,6 @@ from various eras, and for various languages:
 - [dart_style](https://github.com/dart-lang/dart_style)
 
 
-
 http://beza1e1.tuxen.de/articles/formatting_code.html
 
 indenting local and global
