@@ -22,7 +22,8 @@ logger.addHandler(streamhandler)
 logger.setLevel(logging.DEBUG)
 
 
-MAX_ROWSIZE = 80
+MAX_ROW_SIZE = 80
+MAX_FUNCTIONS_PER_FILE = 5
 
 class FormatSpec(object):
     global_scope_n_chars = 0

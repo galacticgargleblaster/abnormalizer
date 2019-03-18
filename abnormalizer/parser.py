@@ -9,7 +9,6 @@ not constructing an AST, just globbing tokens together into "structure" or "func
 These objects need to exist so that we can make assertions like: 
 "header file has include guards"
 "struct name is prefixed with s_"
-
 """
 
 from pygments.token import Token as PT
