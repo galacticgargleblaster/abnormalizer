@@ -2,7 +2,7 @@ from pygments.formatter import Formatter
 from pygments.token import Token as PygmentsToken
 from . import Token, TokenLike, logger, MAX_ROW_SIZE, MAX_FUNCTIONS_PER_FILE, FormatSpec
 from .parser import grouped_by_language_feature
-from .language import LanguageFeature, PreProcessorDirective, StructureLike, FunctionDefintion
+from .language import LanguageFeature, PreProcessorDirective, StructureLike, FunctionDefinition
 from collections import namedtuple
 from typing import List
 import logging
@@ -103,7 +103,7 @@ class NormeFormatter(Formatter):
         globs = [e for e in globs if isinstance(e, LanguageFeature) or e.strip() != ''] 
         [g.remove_whitespace() for g in globs if isinstance(g, LanguageFeature)]
 
-        n_function_defns = len([f for f in globs if isinstance(f, FunctionDefintion)])
+        n_function_defns = len([f for f in globs if isinstance(f, FunctionDefinition)])
         if n_function_defns > MAX_FUNCTIONS_PER_FILE:
             logger.warning(f"there are {n_function_defns} function definitions. (limit {MAX_FUNCTIONS_PER_FILE})")
 
@@ -111,11 +111,11 @@ class NormeFormatter(Formatter):
             if (token.ttype == PygmentsToken.Comment.Special):
                 outfile.write(SPECIAL)
             elif (isinstance(token, PreProcessorDirective)):
+                if "#endif" in token.value:
+                    self.spec.define_depth_n_spaces -= 1
                 outfile.write(token.formatted(self.spec))
                 if "#if" in token.value:
                     self.spec.define_depth_n_spaces += 1
-                elif "#endif" in token.value:
-                    self.spec.define_depth_n_spaces -= 1
             elif (isinstance(token, StructureLike)):
                 outfile.write(token.formatted(self.spec))
             else:
