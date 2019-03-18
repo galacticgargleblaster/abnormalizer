@@ -1,6 +1,7 @@
 from pygments.formatter import Formatter
 from pygments.token import Token as PygmentsToken
-from . import Token, TokenLike, logger, MAX_ROW_SIZE, MAX_FUNCTIONS_PER_FILE, FormatSpec
+from . import logger, MAX_ROW_SIZE, MAX_FUNCTIONS_PER_FILE, FormatSpec
+from .token import Token, TokenLike
 from .parser import grouped_by_language_feature
 from .language import LanguageFeature, PreProcessorDirective, StructureLike, FunctionDefinition
 from collections import namedtuple
@@ -116,7 +117,7 @@ class NormeFormatter(Formatter):
                 outfile.write(token.formatted(self.spec))
                 if "#if" in token.value:
                     self.spec.define_depth_n_spaces += 1
-            elif (isinstance(token, StructureLike)):
+            elif (isinstance(token, LanguageFeature)):
                 outfile.write(token.formatted(self.spec))
             else:
                 outfile.write(token.value)

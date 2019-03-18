@@ -12,55 +12,8 @@ These objects need to exist so that we can make assertions like:
 """
 
 from pygments.token import Token as PT
-from . import Token
+from .token import Token, next_punctuation, distance_to_next_token_containing, find_range_of_tokens_within_scope
 from .language import FunctionDefinition, FunctionPrototype, StructureLike, GlobalDeclaration, PreProcessorDirective
-
-def next_punctuation(tokens: List[Token]) -> (int, str):
-    """ 
-    (int, str)
-    (index of punctuation token, string that was matched )
-    """
-    for idx, token in enumerate(tokens):
-        try:
-            p = next((p for p in ";({" if p in token.value)) 
-            return (idx, p)
-        except StopIteration:
-            pass
-    return None
-
-def distance_to_next_token_containing(tokens, start, substring):
-    try:
-        return next(\
-            (end - start for end in range(start, len(tokens))\
-                if substring in tokens[end].value))
-    except StopIteration:
-        return None
-
-def find_range_of_tokens_within_scope(tokens, start_index: int, punctuation: str):
-    """
-    finds next token matching punctuation, "first", then finds the closing punctuation "last".
-    :return: inclusive range
-    """
-    closure = {"{": "}", "(": ")"}[punctuation]
-    idx = start_index
-    sum = 0
-    first = None
-    last = None
-    while first is None:
-        if punctuation in tokens[idx].value:
-            first = idx
-        else:
-            idx += 1
-    while last is None:
-        if punctuation in tokens[idx].value:
-            sum += 1
-        if closure in tokens[idx].value:
-            sum -= 1
-        if (sum == 0):
-            last = idx + 1
-        idx += 1
-    return (first, last)
-
 
 def grouped_by_language_feature(tokens):
     """
