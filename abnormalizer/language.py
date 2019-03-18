@@ -81,6 +81,24 @@ class StructureBase(LanguageFeature, GlobalScopeContributor, ABC):
     def _identifier_idx(self):
         return distance_to_next_token_containing(self.tokens, start=0, substring='{') - 1
 
+    @property
+    def _members(self) -> List[List[Token]]:
+        """ returns struct/enum members """
+        members = []
+        open_b, close_b = find_range_of_tokens_within_scope(self.tokens, self._identifier_idx, '{')
+        idx = open_b + 1
+        while (idx < close_b):
+            dist = distance_to_next_token_containing(self.tokens, idx, self.SEPARATOR)
+            if (dist and idx + dist > close_b): 
+                break
+            if dist:
+                members.append(self.tokens[idx:idx+dist + 1])
+            else:
+                members.append(self.tokens[idx:close_b - 1])
+                return members
+            idx += dist + 1
+        return members
+
     def minimum_global_scope_indentation(self) -> int:
         idx = self._identifier_idx
         while (self.tokens[idx].value == '*'):
@@ -97,13 +115,11 @@ class StructureBase(LanguageFeature, GlobalScopeContributor, ABC):
         
         open_b, close_b = find_range_of_tokens_within_scope(self.tokens, idx, '{')
 
-        import ipdb; ipdb.set_trace()
 
         output = f"""{type_specifiers}{n_tabs * TAB}{identifier}
-        {{
-        {TAB}{open_b}
-        }};
-        """
+{{
+{self._formatted_body(spec)}}};
+"""
         return output 
 
 class StructureDefinition(StructureBase):
@@ -120,25 +136,9 @@ class StructureDefinition(StructureBase):
             first, last = self._split_member(member, spec)
             line = f"{TAB}{' '.join([t.value for t in first])}"
             n_tabs = tabs_needed_to_pad_to_scope(len(line), self.minimum_local_scope_indentation(spec))
-            line += f"{TAB * n_tabs}{last}\n"
+            line += f"{TAB * n_tabs}{''.join([t.value for t in last])}\n"
             result += line
         return result
-
-    @property
-    def _members(self) -> List[List[Token]]:
-        """ returns struct/enum members """
-        members = []
-        open_b, close_b = find_range_of_tokens_within_scope(self.tokens, self._identifier_idx, '{')
-        idx = open_b + 1
-        while (idx < close_b):
-            dist = distance_to_next_token_containing(self.tokens, idx, self.SEPARATOR)
-            if dist:
-                members.append(self.tokens[idx:idx+dist + 1])
-            else:
-                members.append(self.tokens[idx:close_b - 1])
-                return members
-            idx += dist + 1
-        return members
      
     def _split_member(self, member: List[Token], spec: FormatSpec) -> Tuple[List[Token]]:
         """ spilts a member into parts pre- and post-indentation """
@@ -159,6 +159,13 @@ class EnumDefinition(StructureBase):
     SEPARATOR = ','
     def _mangle_names(self):
         pass
+    
+    def _formatted_body(self, spec: FormatSpec) -> str:
+        result = ""
+        for member in self._members:
+            line = f"{TAB}{' '.join([t.value for t in member if t.value != ','])},\n"
+            result += line
+        return result
 
 class TypedefStructureDefinition(StructureDefinition):
     def _mangle_names(self):
