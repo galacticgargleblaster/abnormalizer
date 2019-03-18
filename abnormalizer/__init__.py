@@ -37,6 +37,10 @@ class Token(TokenLike):
             logger.info(f"before: `{self}`")
             self.value = "\n".join([line.rstrip() for line in self.value.split("\n")])
             logger.info(f"after: `{self}`")
+    
+    def strip(self) -> str:
+        self.value = self.value.strip()
+        return self.value
 
     def __str__(self):
         """ for analysis purposes """

@@ -1,8 +1,9 @@
 from pygments.formatter import Formatter
 from pygments.token import Token as PygmentsToken
 from . import Token, TokenLike, logger
-from .parser import glob_tokens, PreProcessorDirective
+from .parser import glob_tokens, PreProcessorDirective, Function, FunctionPrototype, StructureLike, GlobalDeclaration, TokenGlob
 from collections import namedtuple
+from typing import List
 import logging
 import os 
 import sys
@@ -70,45 +71,55 @@ class NormeFormatter(Formatter):
         self.preprocessor_define_depth = 0
         self.global_scope_n_tabs = 0
 
-    # def get_global_scope(self, tokens) -> int:
-    #     global_scope = 0
-    #     (PygmentsToken.Keyword, "typedef"), GreedyAnything, (PygmentsToken.Name)
-    #     (PygmentsToken.Keyword, "struct"), GreedyAnything, (PygmentsToken.Name)
-    #     (PygmentsToken.Name || PygmentsToken.Keyword.Type), GreedyAnything, (PygmentsToken.Name)
-
-    def preprocess_tokens(self, tokensource):
-        """ mutates the tokensource and maybe updates global scope? """
-        tokensource = list(tokensource)
-        tokens = [Token(ttype=ttype, value=value) for ttype, value in tokensource]
+    @staticmethod
+    def preprocess_tokens(tokens: List[Token]):
+        """
+        trims whitespace from tokens and pops whitespace tokens entirely
+        """
         clean_tokens = []
         for idx, token in enumerate(tokens):
             logger.info(token)
             token.remove_trailing_whitespace()
             if token.ttype == PygmentsToken.Comment.Multiline:
                 token.value = format_block_comment(token.value)
-
-            if (token.value == '\n' and  token.ttype == PygmentsToken.Text and idx > 0 \
-                and tokens[idx-1].value == '\n' and tokens[idx-1].ttype == PygmentsToken.Text):
-                logger.info(f"trimming newline at token idx {idx}, because the previous token was also a newline.")
-                logger.info(f'previous: {tokens[idx-1]}')
-                logger.info(f'current: {tokens[idx]}')
-            else:
-                clean_tokens.append(token)
+            clean_tokens.append(token)
         return clean_tokens
 
+    
+
+    @staticmethod
+    def remove_whitespace_tokens(globs: List[TokenLike]):
+        for entity in globs:
+            import ipdb; ipdb.set_trace()
+            if isinstance(entity, TokenGlob):
+                [t.strip() for t in entity.tokens]
+                entity.remove_empty_tokens()
+            else:
+                entity.strip()
+                if entity.value == '':
+                    globs.remove(entity)
+        return globs
+
     def format(self, tokensource, outfile):
-        tokens = self.preprocess_tokens(tokensource)
-        globs = glob_tokens(tokens)
+        tokens = [Token(ttype=ttype, value=value) for ttype, value in list(tokensource)]
+        tokens = self.preprocess_tokens(tokens)
+        globs = glob_tokens(tokens)  # gotta glob the preprocessor defines together before removing all whitespace
+        # all whitespace can be removed after globbing is done.
+
+        print(f"went from {len(globs)}")
+        globs = [e for e in globs if isinstance(e, TokenGlob) or e.strip() != ''] 
+        print(f"to {len(globs)} by trimming whitespace")
 
         for token in globs:
             if (token.ttype == PygmentsToken.Comment.Special):
                 outfile.write(SPECIAL)
-                continue
             elif (isinstance(token, PreProcessorDirective)):
                 outfile.write(token.formatted(self.preprocessor_define_depth))
                 if "#if" in token.value:
                     self.preprocessor_define_depth += 1
                 elif "#endif" in token.value:
                     self.preprocessor_define_depth -= 1
-                continue
-            outfile.write(token.value)
+            elif (isinstance(token, StructureLike)):
+                outfile.write(token.formatted(self.global_scope_n_tabs))
+            else:
+                outfile.write(token.value)
