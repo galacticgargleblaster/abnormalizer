@@ -25,7 +25,7 @@ SPECIAL = \
 """
 
 
-def vis_len(value: str) -> int:
+def printed_length(value: str) -> int:
     """ a tab usually prints as four spaces """
     return len(value) + (value.count("\t") * 3)
 
@@ -49,7 +49,7 @@ def format_block_comment(value: str) -> str:
     input_lines = value.split("\n")
     wrapped_lines = []
     for line in input_lines:
-        while vis_len(line) > MAX_ROW_SIZE:
+        while printed_length(line) > MAX_ROW_SIZE:
             wrapped_lines.append(f"{line[:MAX_COMMENT_LINE_LEN]}")
             line = f"**\t{line[MAX_COMMENT_LINE_LEN:]}"
         wrapped_lines.append(line)
@@ -118,17 +118,24 @@ class NormeFormatter(Formatter):
                                             for t in s.user_defined_types]
         self.spec.user_defined_type_names = set(self.spec.user_defined_type_names)
 
-        for token in globs:
-            if (token.ttype == PygmentsToken.Comment.Special):
-                outfile.write(SPECIAL)
-            elif (isinstance(token, PreProcessorDirective)):
-                if "#endif" in token.value:
+
+
+        for glob in globs:
+            formatted_glob = ""
+            if (glob.ttype == PygmentsToken.Comment.Special):
+                formatted_glob = SPECIAL
+            elif (isinstance(glob, PreProcessorDirective)):
+                if "#endif" in glob.value:
                     self.spec.define_depth_n_spaces -= 1
-                outfile.write(token.formatted(self.spec))
-                if "#if" in token.value:
+                formatted_glob = glob.formatted(self.spec)
+                if "#if" in glob.value:
                     self.spec.define_depth_n_spaces += 1
-            elif (isinstance(token, LanguageFeature)):
-                outfile.write(token.formatted(self.spec))
+            elif (isinstance(glob, LanguageFeature)):
+                formatted_glob = glob.formatted(self.spec)
             else:
-                outfile.write(token.value)
+                formatted_glob = glob.value
+            
+            if any(printed_length(line) > MAX_ROW_SIZE for line in formatted_glob.split("\n")):
+                logger.warning("variable names are too long to be formatted correctly")
+            outfile.write(formatted_glob)
             outfile.write('\n')

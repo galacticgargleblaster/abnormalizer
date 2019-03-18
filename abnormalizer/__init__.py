@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 filehandler = logging.FileHandler(filename=log_file_path, mode='w')
 streamhandler = logging.StreamHandler(stream=sys.stderr)
+streamformatter = logging.Formatter('%(levelname)s: %(message)s')
+streamhandler.setFormatter(streamformatter)
 streamhandler.setLevel(logging.WARNING)
 filehandler.setLevel(logging.DEBUG)
 logger.addHandler(filehandler)
