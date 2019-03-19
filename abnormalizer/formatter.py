@@ -21,8 +21,7 @@ SPECIAL = \
 /*   Created: 1967/08/25 00:00:00 by student           #+#    #+#             */
 /*   Updated: 4242/42/42 66:66:66 by studnet          ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
-"""
+/* ************************************************************************** */"""
 
 
 
@@ -97,6 +96,7 @@ class NormeFormatter(Formatter):
         # because preprocessor directives' syntax relies on whitespace 
         globs = grouped_by_language_feature(tokens)
         
+        
         # all whitespace can be removed after globbing is done.
         globs = [e for e in globs if isinstance(e, LanguageFeature) or e.strip() != ''] 
         [g.remove_whitespace() for g in globs if isinstance(g, LanguageFeature)]
@@ -119,7 +119,7 @@ class NormeFormatter(Formatter):
         print(self.spec.global_scope_n_chars)
 
 
-        for glob in globs:
+        for idx, glob in enumerate(globs):
             formatted_glob = ""
             if (glob.ttype == PygmentsToken.Comment.Special):
                 formatted_glob = SPECIAL
@@ -137,4 +137,6 @@ class NormeFormatter(Formatter):
             if any(printed_length(line) > MAX_ROW_SIZE for line in formatted_glob.split("\n")):
                 logger.warning("variable names are too long to be formatted correctly")
             outfile.write(formatted_glob)
+            if (idx + 1 < len(globs)):
+                outfile.write('\n')
             outfile.write('\n')
