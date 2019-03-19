@@ -1,6 +1,6 @@
 from pygments.formatter import Formatter
 from pygments.token import Token as PygmentsToken
-from . import logger, MAX_ROW_SIZE, MAX_FUNCTIONS_PER_FILE, FormatSpec, printed_length
+from . import logger, MAX_LINE_LENGTH, MAX_FUNCTIONS_PER_FILE, FormatSpec, printed_length
 from .token import Token, TokenLike
 from .parser import grouped_by_language_feature
 from .language import LanguageFeature, PreProcessorDirective, StructureLike, FunctionDefinition, GlobalScopeContributor, StructureBase
@@ -23,14 +23,14 @@ SPECIAL = \
 /*                                                                            */
 /* ************************************************************************** */"""
 
-MAX_COMMENT_LINE_LEN = MAX_ROW_SIZE - len("**    ")
+MAX_COMMENT_LINE_LEN = MAX_LINE_LENGTH - len("**    ")
 
 def format_block_comment(value: str) -> str:
     """ naively wraps lines and removes extra ** """
     input_lines = value.split("\n")
     wrapped_lines = []
     for line in input_lines:
-        while printed_length(line) > MAX_ROW_SIZE:
+        while printed_length(line) > MAX_LINE_LENGTH:
             wrapped_lines.append(f"{line[:MAX_COMMENT_LINE_LEN]}")
             line = f"**\t{line[MAX_COMMENT_LINE_LEN:]}"
         wrapped_lines.append(line)
@@ -115,7 +115,7 @@ class NormeFormatter(Formatter):
             else:
                 formatted_glob = glob.value
             
-            if any(printed_length(line) > MAX_ROW_SIZE for line in formatted_glob.split("\n")):
+            if any(printed_length(line) > MAX_LINE_LENGTH for line in formatted_glob.split("\n")):
                 logger.warning("variable names are too long to be formatted correctly")
             outfile.write(formatted_glob)
             if (idx + 1 < len(globs)):

@@ -24,7 +24,7 @@ logger.addHandler(streamhandler)
 logger.setLevel(logging.DEBUG)
 
 
-MAX_ROW_SIZE = 80
+MAX_LINE_LENGTH = 80
 MAX_FUNCTIONS_PER_FILE = 5
 
 def tabs_needed_to_pad_to_scope(line_length: int, scope: int) -> int:

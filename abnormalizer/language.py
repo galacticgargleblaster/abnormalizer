@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from typing import List, Tuple
 
-from . import FormatSpec, logger, tabs_needed_to_pad_to_scope, printed_length
+from . import FormatSpec, logger, tabs_needed_to_pad_to_scope, printed_length, MAX_LINE_LENGTH
 from .token import TokenLike, Token, distance_to_next_token_containing, find_range_of_tokens_within_scope
 from pygments.token import Token as PT
 
@@ -72,12 +72,20 @@ class FunctionDefinition(LanguageFeature, FunctionBase):
         return self.value
 
 class FunctionPrototype(LanguageFeature, FunctionBase):
+    @staticmethod
+    def _wrap_to_fit(line: str) -> str:
+        if (printed_length(line) > MAX_LINE_LENGTH):
+            pre, post = line.split('(', maxsplit=1)
+            line = f"{pre}(\n\t{post}"
+        return line
+
     def formatted(self, spec: FormatSpec) -> str:
-        first_part = f"{' '.join([t.value for t in self.tokens[:self._split_index]])}"
-        n_tabs = tabs_needed_to_pad_to_scope(printed_length(first_part), spec.global_scope_n_chars)
+        return_type = f"{' '.join([t.value for t in self.tokens[:self._split_index]])}"
+        n_tabs = tabs_needed_to_pad_to_scope(printed_length(return_type), spec.global_scope_n_chars)
         arg_start = distance_to_next_token_containing(self.tokens, 0, '(')
         ptr_and_identifier = "".join([t.value for t in self.tokens[self._split_index: self._split_index + arg_start - 1]])
-        return first_part + (TAB * n_tabs) + ptr_and_identifier + self._formatted_arguments(spec) 
+        line = return_type + (TAB * n_tabs) + ptr_and_identifier + self._formatted_arguments(spec)
+        return (self._wrap_to_fit(line))
 
 class GlobalDeclaration(LanguageFeature, GlobalScopeContributor):
     def formatted(self, spec: FormatSpec) -> str:
