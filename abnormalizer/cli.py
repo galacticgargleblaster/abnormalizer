@@ -4,6 +4,7 @@
 import sys
 import click
 from .abnormalizer import normalized 
+import shutil
 
 
 @click.command()
@@ -13,13 +14,11 @@ def main(filename, dry_run):
     """Console script for abnormalizer."""
     if not (filename.endswith(".h") or filename.endswith(".c")):
         raise IOError("invalid file extension")
+    shutil.copy(filename, f"{filename}.BAK")
     output = normalized(filename)
     output.seek(0)
-    if (dry_run):
-        sys.stdout.write(output.read())
-    else:
-        with open(filename, "w") as f:
-            f.write(output.read())
+    with open(filename, "w") as f:
+        f.write(output.read())
     return 0
 
 
