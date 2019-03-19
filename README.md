@@ -26,7 +26,7 @@ Maybe.  It's a program that edits your code so you don't have to.
 
 ## The output is ugly!
 
-¯\_(ツ)_/¯
+¯\_(ツ)_/¯ make a branch that makes it prettier
 
 ## About
 
