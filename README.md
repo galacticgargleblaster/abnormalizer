@@ -14,7 +14,7 @@ abnormalizer operates on `.c` and `.h` files only
 
 ## What does this do?
 
-Makes indentation, spacing, naming of include guards and identifiers compliant with *Le Norme*
+Make indentation and spacing compliant with *Le Norme*
 
 ## What doesn't this do?
 
@@ -24,13 +24,15 @@ Fix syntactical errors, handle formatting of nested struct definitions, make fun
 
 Maybe.  It's a program that edits your code so you don't have to. 
 
-### Why???
+## The output is ugly!
 
-It is a software person's duty to minimize the repetition of tasks which they themselves have done before.
+¯\_(ツ)_/¯
+
+## About
 
 This is an atrocious hack built atop pygments, a legitimate syntax-highlighting library.
 
-### *Real World* formatters for *Real World* code style standards
+## *Real World* formatters for *Real World* code style standards
 
 from various eras, and for various languages:
 
@@ -40,9 +42,11 @@ from various eras, and for various languages:
 - [gofmt](https://golang.org/cmd/gofmt/)
 - [dart_style](https://github.com/dart-lang/dart_style)
 
+## Further Reading
 
 http://beza1e1.tuxen.de/articles/formatting_code.html
 
-header include guards
-spacing around assignments at global scope
-auto-prefixing
+
+#todo:
+- add include guards to .h
+- name-mangle identifiers into g_foo, s_bar, t_baz, etc. 
