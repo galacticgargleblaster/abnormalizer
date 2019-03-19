@@ -17,7 +17,7 @@ from .language import FunctionDefinition, FunctionPrototype, StructureLike, Glob
 
 def grouped_by_language_feature(tokens):
     """
-    Acts at global scope, grouping tokens into language features.
+    Acts at global scope, grouping tokens into globs of like language feature.
 
     FUNCTION PROTOTYPE (functions don't get called at global scope)
     asdf hjkl(type asdf);

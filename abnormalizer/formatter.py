@@ -23,21 +23,6 @@ SPECIAL = \
 /*                                                                            */
 /* ************************************************************************** */"""
 
-
-
-
-"""
-need to do some light parsing after tokenization, need to be able to identify struct scopes, function scopes
-
-line wrapping (depends on token type)
-    - Comment.Special, insert **
-    - all others, tab to global scope
-
-space preprocesser directives
-
-Determine global scope spacing
-"""
-
 MAX_COMMENT_LINE_LEN = MAX_ROW_SIZE - len("**    ")
 
 def format_block_comment(value: str) -> str:

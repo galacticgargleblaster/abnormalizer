@@ -43,8 +43,6 @@ from various eras, and for various languages:
 
 http://beza1e1.tuxen.de/articles/formatting_code.html
 
-spacing in header files
-spacing in function prototypes
+header include guards
 spacing around assignments at global scope
-header guards
 auto-prefixing
