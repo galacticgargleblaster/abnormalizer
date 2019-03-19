@@ -18,7 +18,7 @@ Make indentation and spacing compliant with *Le Norme*
 
 ## What doesn't this do?
 
-Fix syntactical errors, handle formatting of nested struct definitions, make functions shorter, operate on multiple files
+Fix syntactical errors, reorder the sequence of tokens, handle formatting of nested struct definitions, make functions shorter, operate on multiple files
 
 ## Will this break my program?
 
@@ -30,7 +30,7 @@ Maybe.  It's a program that edits your code so you don't have to.
 
 ## About
 
-This is an atrocious hack built atop pygments, a legitimate syntax-highlighting library.
+This is an atrocious hack, a pile of fragile heuristics built atop pygments, a legitimate syntax-highlighting library.
 
 ## *Real World* formatters for *Real World* code style standards
 

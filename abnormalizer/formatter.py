@@ -1,5 +1,5 @@
 from pygments.formatter import Formatter
-from pygments.token import Token as PygmentsToken
+from pygments.token import Token as PT 
 from . import logger, MAX_LINE_LENGTH, MAX_FUNCTIONS_PER_FILE, FormatSpec, printed_length
 from .token import Token, TokenLike
 from .parser import grouped_by_language_feature
@@ -68,7 +68,7 @@ class NormeFormatter(Formatter):
         for token in tokens:
             logger.info(token)
             token.remove_trailing_whitespace()
-            if token.ttype == PygmentsToken.Comment.Multiline:
+            if token.ttype == PT.Comment.Multiline:
                 token.value = format_block_comment(token.value)
             clean_tokens.append(token)
         return clean_tokens
@@ -102,7 +102,7 @@ class NormeFormatter(Formatter):
 
         for idx, glob in enumerate(globs):
             formatted_glob = ""
-            if (glob.ttype == PygmentsToken.Comment.Special):
+            if (glob.ttype == PT.Comment.Special):
                 formatted_glob = SPECIAL
             elif (isinstance(glob, PreProcessorDirective)):
                 if "#endif" in glob.value:

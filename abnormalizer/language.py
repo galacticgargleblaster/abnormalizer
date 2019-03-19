@@ -90,15 +90,48 @@ class FunctionBase(GlobalScopeContributor):
 class FunctionDefinition(LanguageFeature, FunctionBase):
     def formatted(self, spec: FormatSpec) -> str:
         prototype = (self._wrap_to_fit(self._prototype(spec)))
-        return prototype[:-1] + "\n" + self._format_bracketed_area(spec) 
+        return prototype[:-1] + "\n" + self._format_bracketed_area(spec)
+      
+    def _format_next_line(self, spec: FormatSpec, start_idx: int, declaration_indentation: int) -> (int, str):
+        """ returns (start_idx of following line, current line as formatted) """
+        line = ""
+        idx = start_idx
+        if (self.tokens[idx].value in "}{"):
+            return (idx, self.tokens[idx].value)
+        while (self.tokens[idx].value not in '}'):
+            if self.tokens[idx].is_type(spec):
+                line += self.tokens[idx].value + " "
+            else:
+                line += self.tokens[idx].value
+
+            if (self.tokens[idx].value == ';'):
+                break
+            idx += 1
+        return (idx, line)
+
+    def _get_necessary_declaration_indentation(self, spec) -> int:
+        """ makes the norme-compliant but fragile assumption that all declarations appear at the beginning of a function """
+        open_b, close_b = find_range_of_tokens_within_scope(self.tokens, 0, '{')
+        max_indent = 0
+        partial_line = ""
+        for idx, token in enumerate(self.tokens[open_b: close_b]):
+            if token.is_type(spec):
+                partial_line += token.value + " "
+            else:
+                max_indent = max(len(partial_line), max_indent)
+                partial_line = ""
+            if token.value == "=":
+                break
+        return max_indent
 
     def _format_bracketed_area(self, spec: FormatSpec):
         output = ""
         open_b, close_b = find_range_of_tokens_within_scope(self.tokens, 0, '{')
         idx = open_b
+        declaration_indentation = self._get_necessary_declaration_indentation(spec)
         depth = 0
         while (idx < close_b):
-            val = self.tokens[idx].value
+            idx, val = self._format_next_line(spec, idx, declaration_indentation)
             output += f"{TAB * depth}{val}\n"
             if (val == '{'):
                 depth += 1
@@ -174,8 +207,7 @@ class StructureBase(LanguageFeature, GlobalScopeContributor, ABC):
     def _split_member(self, member: List[Token], spec: FormatSpec) -> Tuple[List[Token]]:
         """ spilts a member into parts pre- and post-indentation """
         idx = 0
-        while (member[idx].ttype in [PT.Keyword, PT.Keyword.Type]\
-                or member[idx].value in spec.user_defined_type_names):
+        while member[idx].is_type(spec):
             idx += 1
         return (member[:idx], member[idx:])
     

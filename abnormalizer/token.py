@@ -1,5 +1,6 @@
 from typing import List
-from . import logger
+from . import logger, FormatSpec
+from pygments.token import Token as PT 
 
 class TokenLike(object):
     ttype = None
@@ -20,6 +21,10 @@ class Token(TokenLike):
     def strip(self) -> str:
         self.value = self.value.strip()
         return self.value
+
+    def is_type(self, spec: FormatSpec) -> bool:
+        return (self.ttype in [PT.Keyword, PT.Keyword.Type]\
+                or self.value in spec.user_defined_type_names)
 
     def __str__(self):
         """ for analysis purposes """
