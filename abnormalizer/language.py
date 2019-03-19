@@ -37,6 +37,13 @@ class PreProcessorDirective(LanguageFeature):
       
 
 class FunctionBase(GlobalScopeContributor):
+    @staticmethod
+    def _wrap_to_fit(line: str) -> str:
+        if (printed_length(line) > MAX_LINE_LENGTH):
+            pre, post = line.split('(', maxsplit=1)
+            line = f"{pre}(\n\t{post}"
+        return line
+        
     @property
     def _split_index(self) -> int:
         """ token idx relative to 0 of function name (or first *).  future split location """
@@ -45,6 +52,17 @@ class FunctionBase(GlobalScopeContributor):
         while (self.tokens[idx - 1].value == '*'):
             idx -= 1
         return idx
+
+    @property
+    def _return_type(self) -> str:
+        return f"{' '.join([t.value for t in self.tokens[:self._split_index]])}"
+
+    def _prototype(self, spec: FormatSpec) -> str:
+        n_tabs = tabs_needed_to_pad_to_scope(printed_length(self._return_type), spec.global_scope_n_chars)
+        arg_start = distance_to_next_token_containing(self.tokens, 0, '(')
+        ptr_and_identifier = "".join([t.value for t in self.tokens[self._split_index: self._split_index + arg_start - 1]])
+        line = self._return_type + (TAB * n_tabs) + ptr_and_identifier + self._formatted_arguments(spec)
+        return line
 
     def _formatted_arguments(self, spec: FormatSpec) -> str:
         open_p, close_p = find_range_of_tokens_within_scope(self.tokens, 0, '(')
@@ -71,23 +89,28 @@ class FunctionBase(GlobalScopeContributor):
 
 class FunctionDefinition(LanguageFeature, FunctionBase):
     def formatted(self, spec: FormatSpec) -> str:
-        return self.value
+        prototype = (self._wrap_to_fit(self._prototype(spec)))
+        return prototype[:-1] + "\n" + self._format_bracketed_area(spec) 
+
+    def _format_bracketed_area(self, spec: FormatSpec):
+        output = ""
+        open_b, close_b = find_range_of_tokens_within_scope(self.tokens, 0, '{')
+        idx = open_b
+        depth = 0
+        while (idx < close_b):
+            val = self.tokens[idx].value
+            output += f"{TAB * depth}{val}\n"
+            if (val == '{'):
+                depth += 1
+            elif (val == '}'):
+                depth -= 1
+            idx += 1
+        return output
 
 class FunctionPrototype(LanguageFeature, FunctionBase):
-    @staticmethod
-    def _wrap_to_fit(line: str) -> str:
-        if (printed_length(line) > MAX_LINE_LENGTH):
-            pre, post = line.split('(', maxsplit=1)
-            line = f"{pre}(\n\t{post}"
-        return line
 
     def formatted(self, spec: FormatSpec) -> str:
-        return_type = f"{' '.join([t.value for t in self.tokens[:self._split_index]])}"
-        n_tabs = tabs_needed_to_pad_to_scope(printed_length(return_type), spec.global_scope_n_chars)
-        arg_start = distance_to_next_token_containing(self.tokens, 0, '(')
-        ptr_and_identifier = "".join([t.value for t in self.tokens[self._split_index: self._split_index + arg_start - 1]])
-        line = return_type + (TAB * n_tabs) + ptr_and_identifier + self._formatted_arguments(spec)
-        return (self._wrap_to_fit(line))
+        return (self._wrap_to_fit(self._prototype(spec)))
 
 class GlobalDeclaration(LanguageFeature, GlobalScopeContributor):
     def formatted(self, spec: FormatSpec) -> str:
