@@ -18,7 +18,7 @@ Makes indentation, spacing, naming of include guards and identifiers compliant w
 
 ## What doesn't this do?
 
-Fix syntactical errors, handle formatting of nested struct definitions
+Fix syntactical errors, handle formatting of nested struct definitions, make functions shorter, operate on multiple files
 
 ## Will this break my program?
 
@@ -28,7 +28,7 @@ Maybe.  It's a program that edits your code so you don't have to.
 
 It is a software person's duty to minimize the repetition of tasks which they themselves have done before.
 
-This is a lazy hack built atop pygments, a syntax-highlighting library.
+This is an atrocious hack built atop pygments, a legitimate syntax-highlighting library.
 
 ### *Real World* formatters for *Real World* code style standards
 

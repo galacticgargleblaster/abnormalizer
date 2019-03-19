@@ -41,8 +41,8 @@ def grouped_by_language_feature(tokens):
                 if p == '(':
                     # Could be function (prototype|definition)
                     open_p, close_p = find_range_of_tokens_within_scope(tokens, idx, '(')
-                    if tokens[close_p + 1].value == ';':
-                        end = close_p + 2  # include the semicolon
+                    if tokens[close_p].value == ';':
+                        end = close_p + 1  # include the semicolon
                         tokens[idx: end] = [FunctionPrototype(tokens[idx: end])]
                     else:  # It's a function definition
                         open_b, close_b = find_range_of_tokens_within_scope(tokens, close_p, '{')

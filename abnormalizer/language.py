@@ -37,12 +37,30 @@ class PreProcessorDirective(LanguageFeature):
       
 
 class FunctionBase(GlobalScopeContributor):
-    def minimum_global_scope_indentation(self) -> int:
+    @property
+    def _split_index(self) -> int:
+        """ token idx relative to 0 of function name (or first *).  future split location """
         identifier_idx = distance_to_next_token_containing(self.tokens, start=0, substring='(')
         idx = identifier_idx - 1
-        while (self.tokens[idx].value == '*'):
+        while (self.tokens[idx - 1].value == '*'):
             idx -= 1
-        line = " ".join([t.value for t in self.tokens[:idx]]) + " "
+        return idx
+
+    def _formatted_arguments(self, spec: FormatSpec) -> str:
+        open_p, close_p = find_range_of_tokens_within_scope(self.tokens, 0, '(')
+        idx = open_p
+        output = ""
+        while idx <= close_p:
+            if (self.tokens[idx].ttype == PT.Name and self.tokens[idx].value not in spec.user_defined_type_names):
+                output += " "
+            output += self.tokens[idx].value
+            if output.endswith(','):
+                output += " "
+            idx += 1
+        return output
+
+    def minimum_global_scope_indentation(self) -> int:
+        line = " ".join([t.value for t in self.tokens[:self._split_index]]) + " "
         return len(line)
 
 class FunctionDefinition(LanguageFeature, FunctionBase):
@@ -51,7 +69,11 @@ class FunctionDefinition(LanguageFeature, FunctionBase):
 
 class FunctionPrototype(LanguageFeature, FunctionBase):
     def formatted(self, spec: FormatSpec) -> str:
-        return self.value
+        first_part = f"{' '.join([t.value for t in self.tokens[:self._split_index]])}"
+        n_tabs = tabs_needed_to_pad_to_scope(len(first_part), spec.global_scope_n_chars)
+        arg_start = distance_to_next_token_containing(self.tokens, 0, '(')
+        ptr_and_identifier = "".join([t.value for t in self.tokens[self._split_index: self._split_index + arg_start - 1]])
+        return first_part + (TAB * n_tabs) + ptr_and_identifier + self._formatted_arguments(spec) 
 
 class GlobalDeclaration(LanguageFeature, GlobalScopeContributor):
     def formatted(self, spec: FormatSpec) -> str:

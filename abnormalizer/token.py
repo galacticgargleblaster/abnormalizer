@@ -62,10 +62,13 @@ def find_range_of_tokens_within_scope(tokens, start_index: int, punctuation: str
     first = None
     last = None
     while first is None:
-        if punctuation in tokens[idx].value:
-            first = idx
-        else:
-            idx += 1
+        try:
+            if punctuation in tokens[idx].value:
+                first = idx
+            else:
+                idx += 1
+        except IndexError:
+            import ipdb; ipdb.set_trace()
     while last is None:
         if punctuation in tokens[idx].value:
             sum += 1
