@@ -51,7 +51,11 @@ class FunctionBase(GlobalScopeContributor):
         idx = open_p
         output = ""
         while idx <= close_p:
-            if (self.tokens[idx].ttype == PT.Name and self.tokens[idx].value not in spec.user_defined_type_names):
+            if (self.tokens[idx].ttype == PT.Operator and self.tokens[idx].value == '*'):
+                output += " "
+            elif (self.tokens[idx].ttype == PT.Name \
+                and self.tokens[idx].value not in spec.user_defined_type_names \
+                    and self.tokens[idx - 1].value != '*'):
                 output += " "
             output += self.tokens[idx].value
             if output.endswith(','):

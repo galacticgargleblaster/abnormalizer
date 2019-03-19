@@ -115,10 +115,6 @@ class NormeFormatter(Formatter):
         if self.spec.global_scope_n_chars % 4:
             self.spec.global_scope_n_chars += (4 - (self.spec.global_scope_n_chars % 4))
 
-
-        print(self.spec.global_scope_n_chars)
-
-
         for idx, glob in enumerate(globs):
             formatted_glob = ""
             if (glob.ttype == PygmentsToken.Comment.Special):
