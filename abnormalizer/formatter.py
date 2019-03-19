@@ -1,6 +1,6 @@
 from pygments.formatter import Formatter
 from pygments.token import Token as PygmentsToken
-from . import logger, MAX_ROW_SIZE, MAX_FUNCTIONS_PER_FILE, FormatSpec
+from . import logger, MAX_ROW_SIZE, MAX_FUNCTIONS_PER_FILE, FormatSpec, printed_length
 from .token import Token, TokenLike
 from .parser import grouped_by_language_feature
 from .language import LanguageFeature, PreProcessorDirective, StructureLike, FunctionDefinition, GlobalScopeContributor, StructureBase
@@ -25,9 +25,6 @@ SPECIAL = \
 """
 
 
-def printed_length(value: str) -> int:
-    """ a tab usually prints as four spaces """
-    return len(value) + (value.count("\t") * 3)
 
 
 """
@@ -107,17 +104,19 @@ class NormeFormatter(Formatter):
         n_function_defns = len([f for f in globs if isinstance(f, FunctionDefinition)])
         if n_function_defns > MAX_FUNCTIONS_PER_FILE:
             logger.warning(f"there are {n_function_defns} function definitions. (limit {MAX_FUNCTIONS_PER_FILE})")
-
-        self.spec.global_scope_n_chars = max([c.minimum_global_scope_indentation()
-                                                for c in globs if isinstance(c, GlobalScopeContributor)])
-        if self.spec.global_scope_n_chars % 4:
-            self.spec.global_scope_n_chars += (4 - (self.spec.global_scope_n_chars % 4))
-
+        
         self.spec.user_defined_type_names = [t \
                                             for s in globs if isinstance(s, StructureBase) \
                                             for t in s.user_defined_types]
         self.spec.user_defined_type_names = set(self.spec.user_defined_type_names)
 
+        self.spec.global_scope_n_chars = max([c.minimum_global_scope_indentation(self.spec)
+                                                for c in globs if isinstance(c, GlobalScopeContributor)])
+        if self.spec.global_scope_n_chars % 4:
+            self.spec.global_scope_n_chars += (4 - (self.spec.global_scope_n_chars % 4))
+
+
+        print(self.spec.global_scope_n_chars)
 
 
         for glob in globs:

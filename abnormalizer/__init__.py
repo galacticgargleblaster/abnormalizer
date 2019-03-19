@@ -28,12 +28,18 @@ MAX_ROW_SIZE = 80
 MAX_FUNCTIONS_PER_FILE = 5
 
 def tabs_needed_to_pad_to_scope(line_length: int, scope: int) -> int:
-    assert line_length <= scope
+    assert line_length <= scope, "global scope calculation has failed"
+    if scope % 4:
+        scope += (4 - (scope % 4)) # round up to nearest multiple of 4
     diff = scope - line_length
-    if diff:
+    if diff % 4:
         return 1 + int(diff / 4)
-    return 0
+    else:
+        return int(diff / 4)
 
+def printed_length(value: str) -> int:
+    """ a tab usually prints as four spaces """
+    return len(value) + (value.count("\t") * 3)
 
 class FormatSpec(object):
     """

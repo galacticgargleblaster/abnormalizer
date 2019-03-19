@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from typing import List, Tuple
 
-from . import FormatSpec, logger, tabs_needed_to_pad_to_scope
+from . import FormatSpec, logger, tabs_needed_to_pad_to_scope, printed_length
 from .token import TokenLike, Token, distance_to_next_token_containing, find_range_of_tokens_within_scope
 from pygments.token import Token as PT
 
@@ -26,7 +26,7 @@ class LanguageFeature(TokenLike, ABC):
 
 class GlobalScopeContributor(ABC):
     @abstractmethod
-    def minimum_global_scope_indentation(self) -> int:
+    def minimum_global_scope_indentation(self, spec: FormatSpec) -> int:
         pass
 
 
@@ -59,7 +59,7 @@ class FunctionBase(GlobalScopeContributor):
             idx += 1
         return output
 
-    def minimum_global_scope_indentation(self) -> int:
+    def minimum_global_scope_indentation(self, spec: FormatSpec) -> int:
         line = " ".join([t.value for t in self.tokens[:self._split_index]]) + " "
         return len(line)
 
@@ -70,7 +70,7 @@ class FunctionDefinition(LanguageFeature, FunctionBase):
 class FunctionPrototype(LanguageFeature, FunctionBase):
     def formatted(self, spec: FormatSpec) -> str:
         first_part = f"{' '.join([t.value for t in self.tokens[:self._split_index]])}"
-        n_tabs = tabs_needed_to_pad_to_scope(len(first_part), spec.global_scope_n_chars)
+        n_tabs = tabs_needed_to_pad_to_scope(printed_length(first_part), spec.global_scope_n_chars)
         arg_start = distance_to_next_token_containing(self.tokens, 0, '(')
         ptr_and_identifier = "".join([t.value for t in self.tokens[self._split_index: self._split_index + arg_start - 1]])
         return first_part + (TAB * n_tabs) + ptr_and_identifier + self._formatted_arguments(spec) 
@@ -79,7 +79,7 @@ class GlobalDeclaration(LanguageFeature, GlobalScopeContributor):
     def formatted(self, spec: FormatSpec) -> str:
         return self.value
 
-    def minimum_global_scope_indentation(self) -> int:
+    def minimum_global_scope_indentation(self, spec: FormatSpec) -> int:
         pass
 
 class StructureBase(LanguageFeature, GlobalScopeContributor, ABC):
@@ -129,7 +129,7 @@ class StructureBase(LanguageFeature, GlobalScopeContributor, ABC):
         for member in self._members:
             first, last = self._split_member(member, spec)
             line = f"{TAB}{' '.join([t.value for t in first])}"
-            n_tabs = tabs_needed_to_pad_to_scope(len(line), self.minimum_local_scope_indentation(spec))
+            n_tabs = tabs_needed_to_pad_to_scope(printed_length(line), spec.global_scope_n_chars)
             line += f"{TAB * n_tabs}{''.join([t.value for t in last])}\n"
             result += line
         return result
@@ -147,15 +147,15 @@ class StructureBase(LanguageFeature, GlobalScopeContributor, ABC):
         for member in self._members:
             first, last = self._split_member(member, spec)
             partial_line = f"{TAB}{' '.join([t.value for t in first])} "
-            min_indentation = max(min_indentation, len(partial_line))
+            min_indentation = max(min_indentation, printed_length(partial_line))
         return min_indentation
 
-    def minimum_global_scope_indentation(self) -> int:
+    def minimum_global_scope_indentation(self, spec: FormatSpec) -> int:
         idx = self._identifier_idx
         while (self.tokens[idx].value == '*'):
             idx -= 1
         line = " ".join([t.value for t in self.tokens[:idx]]) + " "
-        return len(line)
+        return max(len(line), self.minimum_local_scope_indentation(spec))
 
     def formatted(self, spec: FormatSpec) -> str:
         idx = self._identifier_idx
@@ -199,7 +199,7 @@ class EnumDefinition(StructureBase):
 class WithTypedef(StructureBase):
     def formatted(self, spec: FormatSpec) -> str:
         n_tabs = tabs_needed_to_pad_to_scope(len("}"), spec.global_scope_n_chars)
-        line = f"{TAB * n_tabs}{self.tokens[-2].value};\n"
+        line = f"{TAB * n_tabs}{self.tokens[-2].value};"
         return super().formatted(spec) + line
 
 class TypedefStructureDefinition(WithTypedef):
