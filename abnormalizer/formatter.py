@@ -3,7 +3,7 @@ from pygments.token import Token as PT
 from . import logger, MAX_LINE_LENGTH, MAX_FUNCTIONS_PER_FILE, FormatSpec, printed_length
 from .token import Token, TokenLike
 from .parser import grouped_by_language_feature
-from .language import LanguageFeature, PreProcessorDirective, StructureLike, FunctionDefinition, GlobalScopeContributor, StructureBase
+from .language import LanguageFeature, PreProcessorDirective, StructureLike, FunctionDefinition, GlobalScopeContributor, StructureBase, FunctionPrototype
 from collections import namedtuple
 from typing import List
 import logging
@@ -14,7 +14,7 @@ SPECIAL = \
 """/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   nothing_to_see_here.h                              :+:      :+:    :+:   */
+/*   turns_out_this_does_not_matter.h                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: student <student@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -89,7 +89,7 @@ class NormeFormatter(Formatter):
         n_function_defns = len([f for f in globs if isinstance(f, FunctionDefinition)])
         if n_function_defns > MAX_FUNCTIONS_PER_FILE:
             logger.warning(f"there are {n_function_defns} function definitions. (limit {MAX_FUNCTIONS_PER_FILE})")
-        
+
         self.spec.user_defined_type_names = [t \
                                             for s in globs if isinstance(s, StructureBase) \
                                             for t in s.user_defined_types]
@@ -118,6 +118,11 @@ class NormeFormatter(Formatter):
             if any(printed_length(line) > MAX_LINE_LENGTH for line in formatted_glob.split("\n")):
                 logger.warning("variable names are too long to be formatted correctly")
             outfile.write(formatted_glob)
-            if (idx + 1 < len(globs)):
+            if any([isinstance(glob, relevant_type) and idx + 1 < len(globs) and isinstance(globs[idx + 1], relevant_type)\
+                    for relevant_type in [PreProcessorDirective, FunctionPrototype]]):
+                pass
+            elif idx == len(globs) - 1:
+                pass
+            else:
                 outfile.write('\n')
             outfile.write('\n')

@@ -87,20 +87,56 @@ class FunctionBase(GlobalScopeContributor):
         line = " ".join([t.value for t in self.tokens[:self._split_index]]) + " "
         return len(line)
 
+
+class Statement(TokenLike):
+    def __init__(self, tokens:List[Token], spec:FormatSpec):
+        self.tokens = tokens
+        self.spec = spec
+
+    @property
+    def value(self):
+        return " ".join([t.value for t in self.tokens])
+    
+
 class FunctionDefinition(LanguageFeature, FunctionBase):
     def formatted(self, spec: FormatSpec) -> str:
         prototype = (self._wrap_to_fit(self._prototype(spec)))
         return prototype[:-1] + "\n" + self._format_bracketed_area(spec)
+
+
+    def _as_statements(self) -> List[Statement]:
+        """ For formatting reasons, it's helpful to split tokens by semicolon """ 
+        statements = []
+        start = 0
+        open_b, close_b = find_range_of_tokens_within_scope(self.tokens, 0, '{')
+        tokens_in_scope = self.tokens[open_b + 1: close_b - 2]
+        for idx, token in enumerate(tokens_in_scope):
+            if token.value in ["if", "else", '{', '}']:
+                statements.append(token)
+            if token.value == ';':
+                statements.append(Statement(tokens_in_scope[start: idx], spec))
+                start = idx + 1
+        return statements
+
+    def _format_declaration(self, spec, idx, declaration_indentation) -> str:
+        if self.tokens[idx + 1].is_type(spec):
+            line = self.tokens[idx].value + " "
+        else:
+            line = self.tokens[idx].value
+            n_tabs = tabs_needed_to_pad_to_scope(printed_length(line), declaration_indentation)
+            line += TAB * n_tabs
+        return line
       
     def _format_next_line(self, spec: FormatSpec, start_idx: int, declaration_indentation: int) -> (int, str):
         """ returns (start_idx of following line, current line as formatted) """
         line = ""
         idx = start_idx
+        needs_newline_after_declarations = True 
         if (self.tokens[idx].value in "}{"):
             return (idx, self.tokens[idx].value)
         while (self.tokens[idx].value not in '}'):
             if self.tokens[idx].is_type(spec):
-                line += self.tokens[idx].value + " "
+                line = self._format_declaration(spec, idx, declaration_indentation)
             else:
                 line += self.tokens[idx].value
 
@@ -118,7 +154,7 @@ class FunctionDefinition(LanguageFeature, FunctionBase):
             if token.is_type(spec):
                 partial_line += token.value + " "
             else:
-                max_indent = max(len(partial_line), max_indent)
+                max_indent = max(printed_length(partial_line), max_indent)
                 partial_line = ""
             if token.value == "=":
                 break
@@ -130,6 +166,8 @@ class FunctionDefinition(LanguageFeature, FunctionBase):
         idx = open_b
         declaration_indentation = self._get_necessary_declaration_indentation(spec)
         depth = 0
+        statements = self._statements()
+        import ipdb; ipdb.set_trace()
         while (idx < close_b):
             idx, val = self._format_next_line(spec, idx, declaration_indentation)
             output += f"{TAB * depth}{val}\n"

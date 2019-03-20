@@ -23,11 +23,12 @@ class Token(TokenLike):
         return self.value
 
     def is_type(self, spec: FormatSpec) -> bool:
-        return (self.ttype in [PT.Keyword, PT.Keyword.Type]\
-                or self.value in spec.user_defined_type_names)
+        return (self.ttype in [PT.Keyword.Type]\
+                or self.value in spec.user_defined_type_names\
+                  or (self.ttype == PT.Keyword and self.value in ['void', 'struct']))
 
     def __str__(self):
-        """ for analysis purposes """
+        """ to display nonprintable characters in logfile """
         value = self.value
         value = value.replace('\t', '⇥⇥⇥⇥')
         value = value.replace('\n', '␤\n')
@@ -67,13 +68,10 @@ def find_range_of_tokens_within_scope(tokens, start_index: int, punctuation: str
     first = None
     last = None
     while first is None:
-        try:
-            if punctuation in tokens[idx].value:
-                first = idx
-            else:
-                idx += 1
-        except IndexError:
-            import ipdb; ipdb.set_trace()
+        if punctuation in tokens[idx].value:
+            first = idx
+        else:
+            idx += 1
     while last is None:
         if punctuation in tokens[idx].value:
             sum += 1
