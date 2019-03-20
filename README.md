@@ -2,13 +2,15 @@
 
 ## Installation
 
-`tbd`
+	brew install python3
+	git clone https://github.com/galacticgargleblaster/abnormalizer
+	pip3 install --editable abnormalizer
 
 ## Usage
 
 `abnormalizer [FILE]`
 
-abnormalizer operates on `.c` and `.h` files only
+at the moment, abnormalizer operates on `.h` files only
 
 `FILE` is backed up as `FILE.BAK` before work begins
 
@@ -46,7 +48,7 @@ from various eras, and for various languages:
 
 http://beza1e1.tuxen.de/articles/formatting_code.html
 
-
 #todo:
+- make .c files work
 - add include guards to .h
 - name-mangle identifiers into g_foo, s_bar, t_baz, etc. 
