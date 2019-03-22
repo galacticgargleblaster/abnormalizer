@@ -22,7 +22,7 @@ class Token(TokenLike):
         self.value = self.value.strip()
         return self.value
 
-    def is_type(self, spec: FormatSpec) -> bool:
+    def is_type_according_to(self, spec: FormatSpec) -> bool:
         return (self.ttype in [PT.Keyword.Type]\
                 or self.value in spec.user_defined_type_names\
                   or (self.ttype == PT.Keyword and self.value in ['void', 'struct']))

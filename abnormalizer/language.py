@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from . import FormatSpec, logger, tabs_needed_to_pad_to_scope, printed_length, MAX_LINE_LENGTH
 from .token import TokenLike, Token, distance_to_next_token_containing, find_range_of_tokens_within_scope
@@ -88,23 +88,43 @@ class FunctionBase(GlobalScopeContributor):
         return len(line)
 
 
-class Statement(TokenLike):
-    def __init__(self, tokens:List[Token], spec:FormatSpec):
-        self.tokens = tokens
-        self.spec = spec
+class Statement(LanguageFeature):
+    def formatted(self, spec: FormatSpec) -> str:
+        return self.value
 
-    @property
-    def value(self):
-        return " ".join([t.value for t in self.tokens])
+class Declaration(Statement):
+    def __init__(self, tokens: List[Token], declaration_indentation: int):
+        self.tokens = tokens
+        self.declaration_indentation = declaration_indentation
+
+    def formatted(self, spec: FormatSpec) -> str:
+        line = ""
+        for idx, token in enumerate(self.tokens):
+            if token.value == ';':
+                line += ';'
+                break
+            elif self.tokens[idx + 1].is_type_according_to(spec):
+                line += token.value + " "
+            else:
+                line += token.value
+                n_tabs = tabs_needed_to_pad_to_scope(printed_length(line), self.declaration_indentation)
+                line += TAB * n_tabs
+        return line
     
+"""
+Declarations:
+should take the form (regex +, not addition):
+(TYPE)+(NAME);
+
+if/else without brackets require a single temporary indent for the next line
+"""
 
 class FunctionDefinition(LanguageFeature, FunctionBase):
     def formatted(self, spec: FormatSpec) -> str:
         prototype = (self._wrap_to_fit(self._prototype(spec)))
         return prototype[:-1] + "\n" + self._format_bracketed_area(spec)
-
-
-    def _as_statements(self) -> List[Statement]:
+            
+    def _aggregate_statements(self, spec:FormatSpec) -> List[Union[Statement, Token]]:
         """ For formatting reasons, it's helpful to split tokens by semicolon """ 
         statements = []
         start = 0
@@ -113,37 +133,11 @@ class FunctionDefinition(LanguageFeature, FunctionBase):
         for idx, token in enumerate(tokens_in_scope):
             if token.value in ["if", "else", '{', '}']:
                 statements.append(token)
+                start = idx + 1
             if token.value == ';':
-                statements.append(Statement(tokens_in_scope[start: idx], spec))
+                statements.append(Statement(tokens_in_scope[start: idx + 1]))
                 start = idx + 1
         return statements
-
-    def _format_declaration(self, spec, idx, declaration_indentation) -> str:
-        if self.tokens[idx + 1].is_type(spec):
-            line = self.tokens[idx].value + " "
-        else:
-            line = self.tokens[idx].value
-            n_tabs = tabs_needed_to_pad_to_scope(printed_length(line), declaration_indentation)
-            line += TAB * n_tabs
-        return line
-      
-    def _format_next_line(self, spec: FormatSpec, start_idx: int, declaration_indentation: int) -> (int, str):
-        """ returns (start_idx of following line, current line as formatted) """
-        line = ""
-        idx = start_idx
-        needs_newline_after_declarations = True 
-        if (self.tokens[idx].value in "}{"):
-            return (idx, self.tokens[idx].value)
-        while (self.tokens[idx].value not in '}'):
-            if self.tokens[idx].is_type(spec):
-                line = self._format_declaration(spec, idx, declaration_indentation)
-            else:
-                line += self.tokens[idx].value
-
-            if (self.tokens[idx].value == ';'):
-                break
-            idx += 1
-        return (idx, line)
 
     def _get_necessary_declaration_indentation(self, spec) -> int:
         """ makes the norme-compliant but fragile assumption that all declarations appear at the beginning of a function """
@@ -151,7 +145,7 @@ class FunctionDefinition(LanguageFeature, FunctionBase):
         max_indent = 0
         partial_line = ""
         for idx, token in enumerate(self.tokens[open_b: close_b]):
-            if token.is_type(spec):
+            if token.is_type_according_to(spec):
                 partial_line += token.value + " "
             else:
                 max_indent = max(printed_length(partial_line), max_indent)
@@ -162,20 +156,22 @@ class FunctionDefinition(LanguageFeature, FunctionBase):
 
     def _format_bracketed_area(self, spec: FormatSpec):
         output = ""
-        open_b, close_b = find_range_of_tokens_within_scope(self.tokens, 0, '{')
-        idx = open_b
-        declaration_indentation = self._get_necessary_declaration_indentation(spec)
+        spec.declaration_indentation = self._get_necessary_declaration_indentation(spec)
         depth = 0
-        statements = self._statements()
-        import ipdb; ipdb.set_trace()
-        while (idx < close_b):
-            idx, val = self._format_next_line(spec, idx, declaration_indentation)
+        aggregate = self._aggregate_statements(spec)
+        for idx, item in enumerate(aggregate):
+            try:
+                val = item.formatted(spec)
+            except AttributeError:
+                val = item.value
             output += f"{TAB * depth}{val}\n"
+            if isinstance(item, Statement) and idx < len(aggregate) - 1 \
+                and not isinstance(aggregate[idx + 1], Statement):
+                output += "\n"
             if (val == '{'):
                 depth += 1
             elif (val == '}'):
                 depth -= 1
-            idx += 1
         return output
 
 class FunctionPrototype(LanguageFeature, FunctionBase):
@@ -245,7 +241,7 @@ class StructureBase(LanguageFeature, GlobalScopeContributor, ABC):
     def _split_member(self, member: List[Token], spec: FormatSpec) -> Tuple[List[Token]]:
         """ spilts a member into parts pre- and post-indentation """
         idx = 0
-        while member[idx].is_type(spec):
+        while member[idx].is_type_according_to(spec):
             idx += 1
         return (member[:idx], member[idx:])
     
